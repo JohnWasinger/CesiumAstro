@@ -13,8 +13,8 @@ A> Here's a C example performing a CRC-32 check on a simulated satellite data
 feed:
 
 [crc32_telemetry_intro.c](crc32_telemetry_intro.c)
-- CRC-32 concepts, generic telemetry struct
 
+- CRC-32 concepts, generic telemetry struct
 
 **Example output from crc32_telemetry_intro.c Example output:**
 === Satellite Telemetry Packet ===
@@ -189,10 +189,17 @@ Per-APID sequence tracking — you'd normally maintain a table of last-seen
 sequence counts keyed by APID to detect gaps independently per data stream.
 Were you doing that kind of gap detection in your work?
 
+---
+
+See [lowLevelC.md](lowLevelC.md) for memory-mapped I/O patterns, the `volatile`
+keyword, and how register access works in embedded systems (relevant to SDR
+hardware interfacing).
+
+---
+
 Q> Would implementing this with Rust be more secure or am I just opening up a
 new can of worms?
 
 A> See [asRust.md](asRust.md) for a full discussion of the C to Rust transition,
 including UB considerations, structural differences, and function signature
 changes between ccsds_crc.c and ccsds_crc.rs.
-
