@@ -1,3 +1,8 @@
+## About This Repository
+
+This documents my hands-on experience with CCSDS packet processing from my time 
+at LASP, expanded with C and Rust implementations relevant to embedded SDR systems.
+
 # CesiumAstro
 
 See [aboutCesiumAstro.md](aboutCesiumAstro.md) for background on CesiumAstro,
