@@ -151,9 +151,9 @@ unsafe {
 ```
 
 The Rust embedded ecosystem (like the `embedded-hal` crate) wraps this in safe
-abstractions, but at the底層 layer, it's still casting addresses to pointers —
-just like C. See [asRust.md](asRust.md) for more on Rust's approach to
-memory safety in embedded contexts.
+abstractions, but at the bottom layer, it's still casting addresses to
+pointers — just like C. See [asRust.md](asRust.md) for more on Rust's approach
+to memory safety in embedded contexts.
 
 ## Summary
 
