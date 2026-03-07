@@ -208,3 +208,7 @@ new can of worms?
 A> See [asRust.md](asRust.md) for a full discussion of the C to Rust transition,
 including UB considerations, structural differences, and function signature
 changes between ccsds_crc.c and ccsds_crc.rs.
+
+---
+
+See [BUILD.md](BUILD.md) for building instructions for this project.
