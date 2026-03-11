@@ -375,8 +375,8 @@ For hands-on examples of CCSDS Space Packet processing, see:
 
 ## References
 
-- CCSDS 133.0-B-2: Space Packet Protocol
-- CCSDS 211.0-B-6: Proximity-1 Space Link Protocol
-- CCSDS 132.0-B-2: TM Synchronization and Channel Coding
-- CCSDS 732.1-B-2: Unified Space Data Link Protocol
-- CCSDS 734.1-B-1: CCSDS File Delivery Protocol (uses DTN)
+- [CCSDS 133.0-B-2: Space Packet Protocol](https://ccsds.org/Pubs/133x0b2e2.pdf)
+- [CCSDS 211.0-B-6: Proximity-1 Space Link Protocol](https://public.ccsds.org/Pubs/211x0b6.pdf)
+- [CCSDS 132.0-B-2: TM Space Data Link Protocol](https://ccsds.org/Pubs/132x0b3.pdf)
+- [CCSDS 732.1-B-2: Unified Space Data Link Protocol](https://public.ccsds.org/Pubs/732x1b2.pdf)
+- [CCSDS 734.1-B-1: LTP for CCSDS (DTN)](https://public.ccsds.org/Pubs/734x1b1.pdf)
