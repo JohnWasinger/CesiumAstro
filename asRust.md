@@ -321,6 +321,11 @@ No external crates needed — pure standard library.
 > are doing under the hood — byte-order, CRC scope, idle packet filtering,
 > sequence gap detection. Anyone can `cargo add spacepackets`; not everyone
 > can implement it from first principles.
+>
+> A `Cargo.toml` is included in this repo with all four crates listed as
+> commented-out dependencies. To switch to a production crate, uncomment the
+> relevant line, move your source to `src/main.rs`, and run `cargo build`.
+> See [BUILD.md](BUILD.md) for Cargo build instructions.
 
 ---
 
