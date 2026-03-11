@@ -7,13 +7,13 @@ payloads for satellite communications.
 
 ## Protocol Overview
 
-| Protocol                        | Standard       | Use Case                   | Key Features                          |
-| ---                             | ---            | ---                        | ---                                   |
-| Space Packet Protocol (SPP)     | CCSDS 133.0-B-2| Primary data encapsulation | Application-layer packet format       |
-| Proximity-1                     | CCSDS 211.0-B-6| Orbiter↔Lander/Rover       | Short-range, autonomous link          |
-| TM/TC Transfer Frames           | CCSDS 132.0-B-2| Ground↔Spacecraft          | Long-haul telemetry/telecommand       |
-| Unified Space Data Link (USLP)  | CCSDS 732.1-B-2| Modern missions            | Flexible framing for all link types   |
-| Delay-Tolerant Network (DTN)    | CCSDS 734.1-B-1| Inter-planetary routing    | Store-and-forward for high latency    |
+| Protocol                       | Standard        | Use Case                   | Key Features                        |
+| ---                            | ---             | ---                        | ---                                 |
+| Space Packet Protocol (SPP)    | CCSDS 133.0-B-2 | Primary data encapsulation | Application-layer packet format     |
+| Proximity-1                    | CCSDS 211.0-B-6 | Orbiter↔Lander/Rover       | Short-range, autonomous link        |
+| TM/TC Transfer Frames          | CCSDS 132.0-B-2 | Ground↔Spacecraft          | Long-haul telemetry/telecommand     |
+| Unified Space Data Link (USLP) | CCSDS 732.1-B-2 | Modern missions            | Flexible framing for all link types |
+| Delay-Tolerant Network (DTN)   | CCSDS 734.1-B-1 | Inter-planetary routing    | Store-and-forward for high latency  |
 
 ## Packet and Frame Sizes
 
@@ -46,15 +46,15 @@ packet follows this structure.
 
 ### Primary Header (6 bytes, always present)
 
-| Field                  | Bits | Byte Offset    | Description                          | Example Value |
-| ---                    | ---  | ---            | ---                                  | ---           |
-| Version Number         | 3    | 0 (bits 0-2)   | Always `000` for CCSDS v1            | `0b000`       |
-| Packet Type            | 1    | 0 (bit 3)      | 0=TM (telemetry), 1=TC (telecommand) | `0`           |
-| Secondary Header Flag  | 1    | 0 (bit 4)      | 1=present, 0=absent                  | `1`           |
-| APID                   | 11   | 0-1 (bits 5-15)| Application Process ID (0x000-0x7FF) | `0x123` (291) |
-| Sequence Flags         | 2    | 2 (bits 0-1)   | 00=cont, 01=first, 10=last, 11=alone | `0b11`        |
-| Sequence Count         | 14   | 2-3 (bits 2-15)| Packet counter (0-16383, wraps)      | `100`         |
-| Packet Data Length     | 16   | 4-5            | (Total data field bytes) - 1         | `0x0015` (21) |
+| Field                 | Bits | Byte Offset     | Description                          | Example Value |
+| ---                   | ---  | ---             | ---                                  | ---           |
+| Version Number        | 3    | 0 (bits 0-2)    | Always `000` for CCSDS v1            | `0b000`       |
+| Packet Type           | 1    | 0 (bit 3)       | 0=TM (telemetry), 1=TC (telecommand) | `0`           |
+| Secondary Header Flag | 1    | 0 (bit 4)       | 1=present, 0=absent                  | `1`           |
+| APID                  | 11   | 0-1 (bits 5-15) | Application Process ID (0x000-0x7FF) | `0x123` (291) |
+| Sequence Flags        | 2    | 2 (bits 0-1)    | 00=cont, 01=first, 10=last, 11=alone | `0b11`        |
+| Sequence Count        | 14   | 2-3 (bits 2-15) | Packet counter (0-16383, wraps)      | `100`         |
+| Packet Data Length    | 16   | 4-5             | (Total data field bytes) - 1         | `0x0015` (21) |
 
 **Primary Header Bit Layout:**
 
@@ -204,13 +204,13 @@ lunar surface-to-orbit links.
 
 ### Proximity-1 Transfer Frame Structure
 
-| Field              | Size       | Description                                |
-| ---                | ---        | ---                                        |
-| Sync Marker        | 32 bits    | Frame synchronization (0x034776C7289A)     |
-| Frame Header       | 48 bits    | SCID, PCID, Frame Length, Sequence Number  |
-| Insert Zone        | Variable   | Optional overhead data                     |
-| Data Field         | Variable   | User packets (up to 2043 bytes typical)    |
-| Frame Error Control| 16 bits    | CRC-16/CCITT                               |
+| Field               | Size     | Description                               |
+| ---                 | ---      | ---                                       |
+| Sync Marker         | 32 bits  | Frame synchronization (0x034776C7289A)    |
+| Frame Header        | 48 bits  | SCID, PCID, Frame Length, Sequence Number |
+| Insert Zone         | Variable | Optional overhead data                    |
+| Data Field          | Variable | User packets (up to 2043 bytes typical)   |
+| Frame Error Control | 16 bits  | CRC-16/CCITT                              |
 
 **Proximity-1 Sync Marker:** `0x034776C7289A` (not the same as AOS/TM frames)
 
@@ -232,14 +232,14 @@ Space Packets for transmission over the physical layer.
 
 ### Transfer Frame Structure
 
-| Field                    | Size      | Description                                |
-| ---                      | ---       | ---                                        |
-| Sync Marker              | 32 bits   | 0x1ACFFC1D                                 |
-| Frame Header             | 48 bits   | Version, SCID, VCID, Frame Count           |
-| Insert Zone (optional)   | Variable  | Security header, timestamp                 |
-| Data Field               | Variable  | Multiplexed Space Packets (typically 1115) |
-| Operational Control Field| Variable  | CLCW (Command Link Control Word)           |
-| Frame Error Control      | 16 bits   | CRC-16/CCITT or none                       |
+| Field                     | Size     | Description                                |
+| ---                       | ---      | ---                                        |
+| Sync Marker               | 32 bits  | 0x1ACFFC1D                                 |
+| Frame Header              | 48 bits  | Version, SCID, VCID, Frame Count           |
+| Insert Zone (optional)    | Variable | Security header, timestamp                 |
+| Data Field                | Variable | Multiplexed Space Packets (typically 1115) |
+| Operational Control Field | Variable | CLCW (Command Link Control Word)           |
+| Frame Error Control       | 16 bits  | CRC-16/CCITT or none                       |
 
 **TM Transfer Frame Bit Layout:**
 
@@ -359,13 +359,13 @@ CCSDS protocols handle reliable data transfer at higher layers.
 
 ## Summary Table - Protocol Stack
 
-| Layer                  | Protocol             | CesiumAstro Component     |
-| ---                    | ---                  | ---                       |
-| Application            | Space Packets (SPP)  | Firmware                  |
-| Network                | DTN Bundles          | Firmware / Ground software|
-| Data Link              | Proximity-1 / USLP   | Firmware                  |
-| Physical (Coding)      | Reed-Solomon / LDPC  | FPGA / DSP                |
-| Physical (Modulation)  | QPSK / 8PSK          | SDR / Phased Array        |
+| Layer                 | Protocol            | CesiumAstro Component      |
+| ---                   | ---                 | ---                        |
+| Application           | Space Packets (SPP) | Firmware                   |
+| Network               | DTN Bundles         | Firmware / Ground software |
+| Data Link             | Proximity-1 / USLP  | Firmware                   |
+| Physical (Coding)     | Reed-Solomon / LDPC | FPGA / DSP                 |
+| Physical (Modulation) | QPSK / 8PSK         | SDR / Phased Array         |
 
 For hands-on examples of CCSDS Space Packet processing, see:
 

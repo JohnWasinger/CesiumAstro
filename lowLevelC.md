@@ -157,13 +157,13 @@ to memory safety in embedded contexts.
 
 ## Summary
 
-| Pattern                        | Use Case                                    |
-| ---                            | ---                                         |
-| Raw pointer cast               | Quick one-offs, debugging                   |
-| `#define` with `volatile`      | Simple peripherals, legacy code             |
-| Struct-based register mapping  | Production code, complex peripherals        |
-| `volatile` keyword             | **Always** for hardware registers           |
-| CMSIS-style typedefs           | Industry standard for ARM microcontrollers  |
+| Pattern                       | Use Case                                   |
+| ---                           | ---                                        |
+| Raw pointer cast              | Quick one-offs, debugging                  |
+| `#define` with `volatile`     | Simple peripherals, legacy code            |
+| Struct-based register mapping | Production code, complex peripherals       |
+| `volatile` keyword            | **Always** for hardware registers          |
+| CMSIS-style typedefs          | Industry standard for ARM microcontrollers |
 
 The `*(int *)0x12345678 = 0xDEADBEEF` one-liner is a great interview question,
 but real embedded systems engineers use the struct-based approach for

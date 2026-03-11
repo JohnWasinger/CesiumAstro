@@ -1,9 +1,9 @@
-## About This Repository
+# About This Repository
 
 This documents my hands-on experience with CCSDS packet processing from my time
 at LASP, expanded with C and Rust implementations relevant to embedded SDR systems.
 
-# CesiumAstro
+## CesiumAstro
 
 See [aboutCesiumAstro.md](aboutCesiumAstro.md) for background on CesiumAstro,
 their technology, relevant CCSDS focus areas, and application advice.
@@ -18,8 +18,8 @@ A> Here's a C example performing a CRC-32 check on a simulated satellite data
 feed:
 
 [crc32_telemetry_intro.c](scratch/crc32_telemetry_intro.c)
-- CRC-32 concepts, generic telemetry struct (introductory exercise, moved to scratch/)
 
+- CRC-32 concepts, generic telemetry struct (introductory exercise, moved to scratch/)
 
 **Example output from crc32_telemetry_intro.c Example output:**
 === Satellite Telemetry Packet ===
@@ -222,7 +222,8 @@ APID lookup, per-APID sequence gap detection with 14-bit wraparound, and
 engineering limit alarms (OK / YELLOW / RED).
 
 **Example output from [ccsds_tables_demo.c](ccsds_tables_demo.c):**
-```
+
+```text
 Loaded 8 APIDs and 11 limits from mission_config.json
 
 --- APID Table Lookup ---
@@ -263,4 +264,3 @@ used for a lunar mission.
 ---
 
 See [BUILD.md](BUILD.md) for building instructions for this project.
-

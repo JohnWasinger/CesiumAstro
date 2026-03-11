@@ -2,7 +2,8 @@
 
 ## Files Referenced
 
-- [ccsds_crc.c](ccsds_crc.c)     — CRC-16/CCITT, proper CCSDS 133.0-B-2 structure in C
+- [ccsds_crc.c](ccsds_crc.c)     — CRC-16/CCITT, proper CCSDS 133.0-B-2
+                                   structure in C
 - [ccsds_crc.rs](ccsds_crc.rs)   — Rust port, memory-safe, typed errors
 
 ---
@@ -77,8 +78,8 @@ and `__builtin_bswap__`, require explicit crates in Rust. The `byteorder` or
 ### Embedded and Real-Time Ecosystem Maturity
 
 If you're on a flight computer or a ground system with strict RTOS requirements,
-Rust's embedded ecosystem (`no_std`) is growing fast but still not as mature as C
-for space-heritage systems. NASA and ESA still predominantly certify C
+Rust's embedded ecosystem (`no_std`) is growing fast but still not as mature as
+C for space-heritage systems. NASA and ESA still predominantly certify C
 (DO-178C, ECSS-E-ST-40C).
 
 ---
@@ -162,15 +163,15 @@ checks it.
 
 ## Honest Verdict
 
-| Concern                           | C                  | Rust                          |
-| ---                               | ---                | ---                           |
-| Buffer overruns in parser         | Easy to introduce  | Prevented in safe code        |
-| Integer overflow in length fields | Silent UB          | Checked by default in debug   |
-| Ignoring error returns            | Very easy          | Compiler warning/error        |
-| Raw byte casting (unsafe)         | Always             | Still needed, but isolated    |
-| Certified flight software         | Mature (DO-178C)   | Emerging (ferrocene compiler) |
-| Ground system / GSE tools         | Your call          | Excellent choice              |
-| Legacy C library integration      | Native             | FFI friction                  |
+| Concern                           | C                 | Rust                          |
+| ---                               | ---               | ---                           |
+| Buffer overruns in parser         | Easy to introduce | Prevented in safe code        |
+| Integer overflow in length fields | Silent UB         | Checked by default in debug   |
+| Ignoring error returns            | Very easy         | Compiler warning/error        |
+| Raw byte casting (unsafe)         | Always            | Still needed, but isolated    |
+| Certified flight software         | Mature (DO-178C)  | Emerging (ferrocene compiler) |
+| Ground system / GSE tools         | Your call         | Excellent choice              |
+| Legacy C library integration      | Native            | FFI friction                  |
 
 Bottom line: If this is ground support software — parsers, monitors, display
 tools — Rust is a strong choice and you'd get real security benefits. If this
@@ -245,15 +246,15 @@ These are memory safety guarantees, not a blanket "no UB" guarantee.
 
 ## The Honest Summary
 
-| Behavior                 | C            | Rust Safe Code                    |
-| ---                      | ---          | ---                               |
-| Buffer overflow          | UB, silent   | Runtime panic                     |
-| Null dereference         | UB, crash    | Prevented by type system          |
-| Use-after-free           | UB, silent   | Prevented by borrow checker       |
-| Integer overflow         | UB, silent   | Panic (debug) / wrap (release)    |
-| Data races               | UB           | Largely prevented, not guaranteed |
-| Logic errors             | Your problem | Still your problem                |
-| unsafe contamination     | N/A          | Still a real risk                 |
+| Behavior             | C            | Rust Safe Code                    |
+| ---                  | ---          | ---                               |
+| Buffer overflow      | UB, silent   | Runtime panic                     |
+| Null dereference     | UB, crash    | Prevented by type system          |
+| Use-after-free       | UB, silent   | Prevented by borrow checker       |
+| Integer overflow     | UB, silent   | Panic (debug) / wrap (release)    |
+| Data races           | UB           | Largely prevented, not guaranteed |
+| Logic errors         | Your problem | Still your problem                |
+| unsafe contamination | N/A          | Still a real risk                 |
 
 The more accurate claim: Rust eliminates the most dangerous classes of
 memory-safety UB in safe code — which is still a massive practical improvement
@@ -407,17 +408,17 @@ to bugs where stale CRC values are reused.
 
 ## Function Signatures Comparison
 
-| C Function               | Rust Equivalent                        | Key Difference                                          |
-| ---                      | ---                                    | ---                                                     |
-| `build_crc16_table()`    | `Crc16::new()`                         | C uses a global array; Rust encapsulates in a struct    |
-| `calculate_crc16(*data, length)` | `Crc16::calculate(&self, data: &[u8])` | Rust slice carries its own length — no separate arg |
-| `build_packet(*pkt, apid, seq)` | `build_packet(crc, apid, seq, time, fine, payload)` | Rust takes more params — no hardcoded values  |
-| `verify_ccsds_packet(*pkt)` | `verify_and_parse(crc, raw: &[u8])`  | C returns `int` (0/1); Rust returns `Result<CcsdPacket, CcsdError>` |
-| `print_packet_info(*pkt)` | `print_packet(&CcsdPacket)`           | Takes parsed struct, not raw packet                     |
-| `get_apid()`             | None needed                            | Eliminated — value stored in struct at parse time       |
-| `get_sequence_count()`   | None needed                            | Eliminated — same reason                                |
-| `get_sequence_flags()`   | None needed                            | Eliminated — same reason                                |
-| `get_user_data_length()` | `data_field_len()` method              | Rust method on struct vs C free function                |
+| C Function                       | Rust Equivalent                                     | Key Difference                                                      |
+| ---                              | ---                                                 | ---                                                                 |
+| `build_crc16_table()`            | `Crc16::new()`                                      | C uses a global array; Rust encapsulates in a struct                |
+| `calculate_crc16(*data, length)` | `Crc16::calculate(&self, data: &[u8])`              | Rust slice carries its own length — no separate arg                 |
+| `build_packet(*pkt, apid, seq)`  | `build_packet(crc, apid, seq, time, fine, payload)` | Rust takes more params — no hardcoded values                        |
+| `verify_ccsds_packet(*pkt)`      | `verify_and_parse(crc, raw: &[u8])`                 | C returns `int` (0/1); Rust returns `Result<CcsdPacket, CcsdError>` |
+| `print_packet_info(*pkt)`        | `print_packet(&CcsdPacket)`                         | Takes parsed struct, not raw packet                                 |
+| `get_apid()`                     | None needed                                         | Eliminated — value stored in struct at parse time                   |
+| `get_sequence_count()`           | None needed                                         | Eliminated — same reason                                            |
+| `get_sequence_flags()`           | None needed                                         | Eliminated — same reason                                            |
+| `get_user_data_length()`         | `data_field_len()` method                           | Rust method on struct vs C free function                            |
 
 ---
 
@@ -473,12 +474,12 @@ monitor.
 
 ## Overall Summary
 
-| Aspect                  | C                          | Rust                              |
-| ---                     | ---                        | ---                               |
-| Wire format handling    | Packed struct cast in-place | Decoded via `from_bytes()`       |
-| Payload size            | Fixed `[16]`               | Dynamic `Vec<u8>`                 |
-| CRC after verification  | Stays in struct            | Discarded — prevents stale reuse  |
-| Error reporting         | Returns 0/1 integer        | Typed `CcsdError` enum            |
-| Getter functions        | 4 free functions           | Eliminated — decoded at parse time|
-| Sequence gap detection  | Not present                | Built in with 14-bit wraparound   |
-| Epoch conversion        | Inline in build_packet     | Delegated to caller               |
+| Aspect                 | C                           | Rust                               |
+| ---                    | ---                         | ---                                |
+| Wire format handling   | Packed struct cast in-place | Decoded via `from_bytes()`         |
+| Payload size           | Fixed `[16]`                | Dynamic `Vec<u8>`                  |
+| CRC after verification | Stays in struct             | Discarded — prevents stale reuse   |
+| Error reporting        | Returns 0/1 integer         | Typed `CcsdError` enum             |
+| Getter functions       | 4 free functions            | Eliminated — decoded at parse time |
+| Sequence gap detection | Not present                 | Built in with 14-bit wraparound    |
+| Epoch conversion       | Inline in build_packet      | Delegated to caller                |

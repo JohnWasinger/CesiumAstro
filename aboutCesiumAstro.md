@@ -54,13 +54,13 @@ Since CesiumAstro builds software-defined phased array payloads, understanding
 how CCSDS sits on top of the SDR physical layer is important. The full stack
 looks like this:
 
-```
+```text
 ┌─────────────────────────────────────────┐
 │     Space Packet Protocol (SPP)         │  ← ccsds_crc.c / ccsds_crc.rs
 │         CCSDS 133.0-B-2                 │
 ├─────────────────────────────────────────┤
 │     TM/TC Transfer Frames               │  ← Wrap packets for transmission
-│   CCSDS 132.0-B-2 / 231.0-B-3          │
+│   CCSDS 132.0-B-2 / 231.0-B-3           │
 ├─────────────────────────────────────────┤
 │     Sync & Channel Coding               │  ← Where SDR gets involved
 │         CCSDS 131.0-B-3                 │
@@ -105,12 +105,12 @@ your homework.
 
 ## Summary
 
-| Area                        | Relevance to CesiumAstro                        |
-| ---                         | ---                                             |
-| Space Packet Protocol       | Core — flows through all their SDR payloads     |
-| TM/TC Transfer Frames       | Core — crosslinks and ground downlinks          |
-| Proximity-1                 | High — LunaNet lunar navigation contract        |
-| Space Link Extension (SLE)  | High — ground station interface standard        |
-| Reed-Solomon / LDPC FEC     | High — Ka-band link margin requirements         |
-| VITA 49 / VRT               | Useful — internal SDR IQ stream standard        |
-| Rust for ground software    | Differentiator — emerging in the industry       |
+| Area                       | Relevance to CesiumAstro                    |
+| ---                        | ---                                         |
+| Space Packet Protocol      | Core — flows through all their SDR payloads |
+| TM/TC Transfer Frames      | Core — crosslinks and ground downlinks      |
+| Proximity-1                | High — LunaNet lunar navigation contract    |
+| Space Link Extension (SLE) | High — ground station interface standard    |
+| Reed-Solomon / LDPC FEC    | High — Ka-band link margin requirements     |
+| VITA 49 / VRT              | Useful — internal SDR IQ stream standard    |
+| Rust for ground software   | Differentiator — emerging in the industry   |
