@@ -13,8 +13,10 @@ set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3")
 # CCSDS CRC-16 example (CCSDS 133.0-B-2 compliant)
 add_executable(ccsds_crc ccsds_crc.c)
 
-# CRC-32 telemetry intro (generic satellite telemetry)
-add_executable(crc32_telemetry_intro crc32_telemetry_intro.c)
+# CCSDS runtime tables demo — APID map, sequence tracking, engineering limits
+# Loads all mission data from mission_config.json at runtime
+add_executable(ccsds_tables_demo ccsds_tables_demo.c)
+target_include_directories(ccsds_tables_demo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Rust target (using custom command)
 find_program(RUSTC rustc)
@@ -40,7 +42,7 @@ else()
 endif()
 
 # Install C targets
-install(TARGETS ccsds_crc crc32_telemetry_intro DESTINATION bin)
+install(TARGETS ccsds_crc ccsds_tables_demo DESTINATION bin)
 
 # Print build info
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
