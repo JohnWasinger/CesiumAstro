@@ -303,14 +303,19 @@ No external crates needed — pure standard library.
 > scratch to demonstrate understanding of the wire format. In production ground
 > software, mature crates exist:
 >
-> - **`spacepackets`** — the most complete crate. Implements CCSDS 133.0-B-2
->   Space Packet Protocol, CFDP (727.0-B-5), PUS telecommand/telemetry, and
->   both CUC and CDS time codes. Supports `no_std` for embedded/flight use.
-> - **`spacepacket`** — higher-level wrapper with full packet parsing, CRC
->   validation via the `crc` crate, and optional async support via tokio for
->   network-based ground station listeners.
-> - **`ccsds_spacepacket`** — lighter option, currently primary header parsing
->   with goals to expand to full generic space packet support.
+> - **[`spacepackets`](https://crates.io/crates/spacepackets)** — the most
+>   complete crate. Implements CCSDS 133.0-B-2 Space Packet Protocol, CFDP
+>   (727.0-B-5), PUS telecommand/telemetry, and both CUC and CDS time codes.
+>   Supports `no_std` for embedded/flight use.
+> - **[`spacepacket`](https://crates.io/crates/spacepacket)** — higher-level
+>   wrapper with full packet parsing, CRC validation via the `crc` crate, and
+>   optional async support via tokio for network-based ground station listeners.
+> - **[`ccsds_spacepacket`](https://crates.io/crates/ccsds_spacepacket)** —
+>   lighter option, currently primary header parsing with goals to expand to
+>   full generic space packet support.
+> - **[`ccsds`](https://crates.io/crates/ccsds)** — goes deeper into the stack:
+>   handles full CADU streams with sync marker detection, Reed-Solomon decoding,
+>   and spacepacket reassembly. Useful for processing raw downlink data files.
 >
 > The value of building from scratch is that you understand what those crates
 > are doing under the hood — byte-order, CRC scope, idle packet filtering,

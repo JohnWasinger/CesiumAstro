@@ -1,0 +1,40 @@
+[package]
+name    = "ccsds_crc"
+version = "0.1.0"
+edition = "2021"
+authors = ["John Wasinger <jwasinger@gmail.com>"]
+description = "CCSDS CRC-16/CCITT Space Packet processing — built from first principles"
+keywords    = ["ccsds", "space", "telemetry", "crc", "embedded"]
+categories  = ["aerospace", "no-std", "parser-implementations"]
+
+[[bin]]
+name = "ccsds_crc"
+path = "ccsds_crc.rs"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# This implementation uses no external crates — pure standard library.
+# It is intentionally built from first principles to demonstrate understanding
+# of the CCSDS wire format: byte-order, CRC scope, idle packet filtering,
+# and per-APID sequence gap detection.
+#
+# For production ground software, mature crates exist:
+#
+#   spacepackets    = "*"     # https://crates.io/crates/spacepackets
+#                             # Most complete: SPP, CFDP, PUS, CUC/CDS time,
+#                             # no_std support. Actively maintained.
+#
+#   spacepacket     = "0.1.2" # https://crates.io/crates/spacepacket
+#                             # Higher-level wrapper, CRC via `crc` crate,
+#                             # optional async tokio sink/stream support.
+#
+#   ccsds_spacepacket = "0.2.0" # https://crates.io/crates/ccsds_spacepacket
+#                               # Lighter option, primary header parsing today,
+#                               # full secondary header support planned.
+#
+#   ccsds           = "*"     # https://crates.io/crates/ccsds
+#                             # Full CADU stream processing: sync marker
+#                             # detection, Reed-Solomon decoding, spacepacket
+#                             # reassembly from raw downlink files.
+# ─────────────────────────────────────────────────────────────────────────────
+
+[dependencies]

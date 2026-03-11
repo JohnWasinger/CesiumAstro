@@ -63,16 +63,48 @@ Expected output:
 [Test 4] Corrupt primary header APID   : FAIL - Header corruption detected!
 ```
 
-**CRC-32 Telemetry Intro (generic satellite telemetry):**
+**CCSDS Runtime Tables (APID map, sequence gap detection, engineering limits):**
 
 ```bash
-./crc32_telemetry_intro
+./ccsds_tables_demo
 ```
+
+Expected output:
+
+```text
+Loaded 8 APIDs and 11 limits from mission_config.json
+
+--- APID Table Lookup ---
+  APID 0x001 → [CDH     ] Command & Data Handling housekeeping
+  APID 0x020 → [ADCS    ] Attitude Determination & Control
+  APID 0x030 → [RF      ] RF/SDR payload telemetry
+  APID 0x100 → [XLINK   ] Inter-satellite crosslink telemetry
+  APID 0x7FF → [IDLE    ] Idle/fill packet — discard
+  APID 0x999 → NOT FOUND
+
+--- Sequence Gap Detection ---
+  APID 0x020 seq   0 — OK
+  APID 0x020 seq   4 — GAP: 1 packet(s) missing
+  APID 0x020 seq   9 — GAP: 3 packet(s) missing
+
+--- Engineering Limits Check ---
+  EPS bus_voltage          =   28.30 V      → OK
+  EPS bus_voltage          =   23.50 V      → YELLOW
+  EPS bus_voltage          =   21.00 V      → RED
+```
+
+> Note: `mission_config.json` must be present in the working directory when running `ccsds_tables_demo`.
 
 **Rust version:**
 
 ```bash
 ./ccsds_crc_rust
+```
+
+Or build and run directly via Cargo without CMake:
+
+```bash
+cargo run
 ```
 
 ## Installing
@@ -101,14 +133,14 @@ If you prefer to compile directly:
 # CCSDS CRC-16
 gcc -Wall -Wextra -std=c11 -O2 ccsds_crc.c -o ccsds_crc
 
-# CRC-32 telemetry intro
-gcc -Wall -Wextra -std=c11 -O2 crc32_telemetry_intro.c -o crc32_telemetry_intro
+# CCSDS runtime tables demo (mission_config.json must be in current directory)
+gcc -Wall -Wextra -std=c11 -O2 ccsds_tables_demo.c -o ccsds_tables_demo
 
 ./ccsds_crc
-./crc32_telemetry_intro
+./ccsds_tables_demo
 ```
 
-**Rust version:**
+**Rust version (direct rustc):**
 
 ```bash
 rustc ccsds_crc.rs -o ccsds_crc_rust
@@ -120,6 +152,27 @@ Or with optimization:
 ```bash
 rustc -C opt-level=3 ccsds_crc.rs -o ccsds_crc_rust
 ```
+
+**Rust version (Cargo):**
+
+A `Cargo.toml` is included in the repo. To build and run via Cargo:
+
+```bash
+cargo build
+cargo run
+```
+
+Or optimized:
+
+```bash
+cargo build --release
+./target/release/ccsds_crc
+```
+
+The `Cargo.toml` currently has no active dependencies — the implementation uses
+only the standard library. To switch to a production CCSDS crate, uncomment the
+relevant dependency in `Cargo.toml` and update the `[[bin]]` path to point at
+your new source file. See [asRust.md](asRust.md) for the available crates.
 
 ## Clean build
 
