@@ -299,6 +299,24 @@ rustc ccsds_crc.rs -o ccsds_crc
 
 No external crates needed — pure standard library.
 
+> **Note on the Rust CCSDS ecosystem:** This implementation is built from
+> scratch to demonstrate understanding of the wire format. In production ground
+> software, mature crates exist:
+>
+> - **`spacepackets`** — the most complete crate. Implements CCSDS 133.0-B-2
+>   Space Packet Protocol, CFDP (727.0-B-5), PUS telecommand/telemetry, and
+>   both CUC and CDS time codes. Supports `no_std` for embedded/flight use.
+> - **`spacepacket`** — higher-level wrapper with full packet parsing, CRC
+>   validation via the `crc` crate, and optional async support via tokio for
+>   network-based ground station listeners.
+> - **`ccsds_spacepacket`** — lighter option, currently primary header parsing
+>   with goals to expand to full generic space packet support.
+>
+> The value of building from scratch is that you understand what those crates
+> are doing under the hood — byte-order, CRC scope, idle packet filtering,
+> sequence gap detection. Anyone can `cargo add spacepackets`; not everyone
+> can implement it from first principles.
+
 ---
 
 Q> What's different between ccsds_crc.c and ccsds_crc.rs? Were there structures
