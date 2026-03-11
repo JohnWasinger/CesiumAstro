@@ -1,6 +1,6 @@
 ## About This Repository
 
-This documents my hands-on experience with CCSDS packet processing from my time 
+This documents my hands-on experience with CCSDS packet processing from my time
 at LASP, expanded with C and Rust implementations relevant to embedded SDR systems.
 
 # CesiumAstro
@@ -17,9 +17,9 @@ usually performed on data feeds from space satellites.
 A> Here's a C example performing a CRC-32 check on a simulated satellite data
 feed:
 
-[crc32_telemetry_intro.c](crc32_telemetry_intro.c)
+[crc32_telemetry_intro.c](scratch/crc32_telemetry_intro.c)
+- CRC-32 concepts, generic telemetry struct (introductory exercise, moved to scratch/)
 
-- CRC-32 concepts, generic telemetry struct
 
 **Example output from crc32_telemetry_intro.c Example output:**
 === Satellite Telemetry Packet ===
@@ -194,11 +194,57 @@ Per-APID sequence tracking — you'd normally maintain a table of last-seen
 sequence counts keyed by APID to detect gaps independently per data stream.
 Were you doing that kind of gap detection in your work?
 
----
+Q> How would you define the APID routing table, sequence gap detection, and
+engineering limit alarms in C? And how do you avoid hardcoding mission data
+into the source?
 
-See [lowLevelC.md](lowLevelC.md) for memory-mapped I/O patterns, the `volatile`
-keyword, and how register access works in embedded systems (relevant to SDR
-hardware interfacing).
+A> These three tables are the core of any CCSDS ground processing pipeline.
+The key insight is that mission data — which APIDs exist, what their limits are
+— changes between missions and even between passes. It belongs in a config file,
+not compiled into the binary.
+
+The implementation splits across two files:
+
+[ccsds_tables.h](ccsds_tables.h)
+— Struct definitions and logic functions only. No hardcoded mission data.
+Contains `ApidEntry`, `LimitEntry`, `SeqTrackTable`, and all lookup/check functions.
+The lookup functions take the runtime-loaded table as a parameter rather than
+referencing a global array.
+
+[mission_config.json](mission_config.json)
+— Single source of truth for all mission data. Defines the APID map (subsystem
+names, packet types) and engineering limits (yellow/red thresholds per parameter
+per APID). Update this file between missions without recompiling.
+
+[ccsds_tables_demo.c](ccsds_tables_demo.c)
+— Loads `mission_config.json` at startup and exercises all three tables:
+APID lookup, per-APID sequence gap detection with 14-bit wraparound, and
+engineering limit alarms (OK / YELLOW / RED).
+
+**Example output from [ccsds_tables_demo.c](ccsds_tables_demo.c):**
+```
+Loaded 8 APIDs and 11 limits from mission_config.json
+
+--- APID Table Lookup ---
+  APID 0x001 → [CDH     ] Command & Data Handling housekeeping
+  APID 0x020 → [ADCS    ] Attitude Determination & Control
+  APID 0x7FF → [IDLE    ] Idle/fill packet — discard
+  APID 0x999 → NOT FOUND
+
+--- Sequence Gap Detection ---
+  APID 0x020 seq   0 — OK
+  APID 0x020 seq   4 — GAP: 1 packet(s) missing
+  APID 0x020 seq   9 — GAP: 3 packet(s) missing
+
+--- Engineering Limits Check ---
+  EPS bus_voltage          =   28.30 V      → OK
+  EPS bus_voltage          =   23.50 V      → YELLOW
+  EPS bus_voltage          =   21.00 V      → RED
+```
+
+This pattern — structs and logic in the header, data in the config file — is
+how production ground systems like YAMCS and SCOS-2000 work. The software ships
+once; the mission database is maintained separately by operations teams.
 
 ---
 
@@ -217,3 +263,4 @@ used for a lunar mission.
 ---
 
 See [BUILD.md](BUILD.md) for building instructions for this project.
+

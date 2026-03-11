@@ -5,118 +5,27 @@
 #include "ccsds_tables.h"
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Demo 1 — Static header tables (ccsds_tables.h)
-// This is what you'd use in flight software or a simple ground tool where
-// the configuration is fixed at compile time.
+// Runtime Mission Config
+// Loaded from mission_config.json at startup. These are the only tables
+// used at runtime — ccsds_tables.h provides the types and logic only.
 // ─────────────────────────────────────────────────────────────────────────────
 
-void demo_static_tables(void) {
-    printf("=== Demo 1: Static Header Tables ===\n\n");
-
-    // ── APID lookup ──────────────────────────────────────────────────────────
-    printf("--- APID Table Lookup ---\n");
-    uint16_t test_apids[] = { 0x001, 0x020, 0x030, 0x100, 0x7FF, 0x999 };
-    for (size_t i = 0; i < sizeof(test_apids)/sizeof(test_apids[0]); i++) {
-        uint16_t apid = test_apids[i];
-        const ApidEntry *e = apid_lookup(apid);
-        if (e)
-            printf("  APID 0x%03X → [%-8s] %s\n", apid, e->subsystem, e->description);
-        else
-            printf("  APID 0x%03X → NOT FOUND\n", apid);
-    }
-
-    // ── Sequence tracking ────────────────────────────────────────────────────
-    printf("\n--- Sequence Gap Detection ---\n");
-    SeqTrackTable seq_tbl;
-    seq_track_init(&seq_tbl);
-
-    // Simulate a stream with gaps on APID 0x020 (ADCS)
-    uint16_t adcs_stream[] = { 0, 1, 2, 4, 5, 9, 10, 11 };
-    for (size_t i = 0; i < sizeof(adcs_stream)/sizeof(adcs_stream[0]); i++) {
-        uint16_t seq = adcs_stream[i];
-        uint16_t missing = seq_track_update(&seq_tbl, 0x020, seq);
-        if (missing > 0)
-            printf("  APID 0x020 seq %3u — GAP: %u packet(s) missing\n",
-                   seq, missing);
-        else
-            printf("  APID 0x020 seq %3u — OK\n", seq);
-    }
-
-    // Print summary stats
-    SeqTrackEntry *e = seq_track_get(&seq_tbl, 0x020);
-    if (e) {
-        printf("\n  APID 0x020 Summary:\n");
-        printf("    Total received : %u\n", e->total_received);
-        printf("    Gap events     : %u\n", e->total_gaps);
-        printf("    Total missing  : %u\n", e->total_missing);
-    }
-
-    // ── Engineering limits ───────────────────────────────────────────────────
-    printf("\n--- Engineering Limits Check ---\n");
-
-    // Simulate some EPS telemetry values — normal, warning, and alarm
-    struct { const char *param; float value; } eps_values[] = {
-        { "bus_voltage",   28.3f  },   // Normal
-        { "bus_voltage",   23.5f  },   // Yellow — low
-        { "bus_voltage",   21.0f  },   // Red — critically low
-        { "battery_temp",  25.0f  },   // Normal
-        { "battery_temp",  47.0f  },   // Yellow — high
-        { "solar_current",  0.05f },   // Yellow — low current
-    };
-
-    for (size_t i = 0; i < sizeof(eps_values)/sizeof(eps_values[0]); i++) {
-        const LimitEntry *lim = limit_lookup(0x010, eps_values[i].param);
-        if (lim) {
-            LimitStatus s = limit_check(lim, eps_values[i].value);
-            printf("  EPS %-20s = %7.2f %-5s → %s\n",
-                   eps_values[i].param,
-                   eps_values[i].value,
-                   lim->units,
-                   limit_status_str(s));
-        }
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Demo 2 — Minimal JSON parser
-//
-// In production you'd use a library like cJSON or jsmn. This is a minimal
-// hand-rolled parser just to show the concept without external dependencies.
-//
-// The key point: the same structs (ApidEntry, LimitEntry) are populated
-// whether data comes from the static header or a JSON file — the rest of
-// the ground software doesn't care which source was used.
-// ─────────────────────────────────────────────────────────────────────────────
-
-// Runtime-allocated versions of the tables (loaded from JSON)
 #define MAX_RUNTIME_APIDS   32
 #define MAX_RUNTIME_LIMITS  64
 
 typedef struct {
-    uint16_t apid;
-    char     subsystem[16];
-    char     description[64];
-} RuntimeApidEntry;
-
-typedef struct {
-    uint16_t apid;
-    char     param_name[32];
-    char     units[8];
-    float    red_low;
-    float    yellow_low;
-    float    yellow_high;
-    float    red_high;
-} RuntimeLimitEntry;
-
-typedef struct {
-    RuntimeApidEntry  apids[MAX_RUNTIME_APIDS];
-    size_t            apid_count;
-    RuntimeLimitEntry limits[MAX_RUNTIME_LIMITS];
-    size_t            limit_count;
+    ApidEntry  apids[MAX_RUNTIME_APIDS];
+    size_t     apid_count;
+    LimitEntry limits[MAX_RUNTIME_LIMITS];
+    size_t     limit_count;
 } MissionConfig;
 
-// Minimal JSON field extractor — finds "key": value in a JSON string.
-// Not a full parser — just enough for flat key/value pairs.
+// ─────────────────────────────────────────────────────────────────────────────
+// Minimal JSON loader
+// In production use cJSON or jsmn. This hand-rolled parser avoids external
+// dependencies while demonstrating the loading concept.
+// ─────────────────────────────────────────────────────────────────────────────
+
 static int json_get_string(const char *json, const char *key,
                             char *out, size_t out_len) {
     char search[64];
@@ -124,7 +33,7 @@ static int json_get_string(const char *json, const char *key,
     const char *p = strstr(json, search);
     if (!p) return 0;
     p += strlen(search);
-    while (*p == ' ' || *p == ':' || *p == ' ') p++;
+    while (*p == ' ' || *p == ':') p++;
     if (*p == '"') {
         p++;
         size_t i = 0;
@@ -142,7 +51,7 @@ static int json_get_float(const char *json, const char *key, float *out) {
     const char *p = strstr(json, search);
     if (!p) return 0;
     p += strlen(search);
-    while (*p == ' ' || *p == ':' || *p == ' ') p++;
+    while (*p == ' ' || *p == ':') p++;
     *out = (float)atof(p);
     return 1;
 }
@@ -151,16 +60,23 @@ static uint16_t parse_hex(const char *s) {
     return (uint16_t)strtol(s, NULL, 16);
 }
 
-// Load mission config from a JSON file
-// Returns 1 on success, 0 on failure
+static PacketType parse_packet_type(const char *s) {
+    if (strcmp(s, "housekeeping") == 0) return PKT_TYPE_HOUSEKEEPING;
+    if (strcmp(s, "science")      == 0) return PKT_TYPE_SCIENCE;
+    if (strcmp(s, "adcs")         == 0) return PKT_TYPE_ADCS;
+    if (strcmp(s, "power")        == 0) return PKT_TYPE_POWER;
+    if (strcmp(s, "comms")        == 0) return PKT_TYPE_COMMS;
+    if (strcmp(s, "payload")      == 0) return PKT_TYPE_PAYLOAD;
+    if (strcmp(s, "idle")         == 0) return PKT_TYPE_IDLE;
+    return PKT_TYPE_UNKNOWN;
+}
+
 int load_mission_config(const char *filename, MissionConfig *cfg) {
     FILE *f = fopen(filename, "r");
     if (!f) {
         fprintf(stderr, "Cannot open config: %s\n", filename);
         return 0;
     }
-
-    // Read entire file into buffer
     fseek(f, 0, SEEK_END);
     long size = ftell(f);
     rewind(f);
@@ -173,98 +89,141 @@ int load_mission_config(const char *filename, MissionConfig *cfg) {
     cfg->apid_count  = 0;
     cfg->limit_count = 0;
 
-    // Parse apid_table entries — find each { block inside "apid_table"
-    const char *apid_section = strstr(buf, "\"apid_table\"");
-    if (apid_section) {
-        const char *p = strchr(apid_section, '[');
+    // Parse apid_table
+    const char *section = strstr(buf, "\"apid_table\"");
+    if (section) {
+        const char *p = strchr(section, '[');
         while (p && cfg->apid_count < MAX_RUNTIME_APIDS) {
-            const char *entry_start = strchr(p, '{');
-            const char *entry_end   = strchr(p, '}');
-            if (!entry_start || !entry_end) break;
-
-            // Extract just this entry
-            size_t entry_len = entry_end - entry_start + 1;
+            const char *s = strchr(p, '{');
+            const char *e = strchr(p, '}');
+            if (!s || !e) break;
+            size_t len = e - s + 1;
             char entry[256] = {0};
-            if (entry_len < sizeof(entry)) {
-                strncpy(entry, entry_start, entry_len);
-                RuntimeApidEntry *e = &cfg->apids[cfg->apid_count];
+            if (len < sizeof(entry)) {
+                strncpy(entry, s, len);
+                ApidEntry *a = &cfg->apids[cfg->apid_count];
                 char apid_str[16] = {0};
-                if (json_get_string(entry, "apid",       apid_str,      sizeof(apid_str)) &&
-                    json_get_string(entry, "subsystem",  e->subsystem,  sizeof(e->subsystem)) &&
-                    json_get_string(entry, "description",e->description,sizeof(e->description))) {
-                    e->apid = parse_hex(apid_str);
+                char type_str[32] = {0};
+                if (json_get_string(entry, "apid",        apid_str,      sizeof(apid_str)) &&
+                    json_get_string(entry, "type",        type_str,      sizeof(type_str)) &&
+                    json_get_string(entry, "subsystem",   a->subsystem,  sizeof(a->subsystem)) &&
+                    json_get_string(entry, "description", a->description,sizeof(a->description))) {
+                    a->apid = parse_hex(apid_str);
+                    a->type = parse_packet_type(type_str);
                     cfg->apid_count++;
                 }
             }
-            p = entry_end + 1;
+            p = e + 1;
         }
     }
 
-    // Parse limits_table entries
-    const char *limits_section = strstr(buf, "\"limits_table\"");
-    if (limits_section) {
-        const char *p = strchr(limits_section, '[');
+    // Parse limits_table
+    section = strstr(buf, "\"limits_table\"");
+    if (section) {
+        const char *p = strchr(section, '[');
         while (p && cfg->limit_count < MAX_RUNTIME_LIMITS) {
-            const char *entry_start = strchr(p, '{');
-            const char *entry_end   = strchr(p, '}');
-            if (!entry_start || !entry_end) break;
-
-            size_t entry_len = entry_end - entry_start + 1;
+            const char *s = strchr(p, '{');
+            const char *e = strchr(p, '}');
+            if (!s || !e) break;
+            size_t len = e - s + 1;
             char entry[256] = {0};
-            if (entry_len < sizeof(entry)) {
-                strncpy(entry, entry_start, entry_len);
-                RuntimeLimitEntry *e = &cfg->limits[cfg->limit_count];
+            if (len < sizeof(entry)) {
+                strncpy(entry, s, len);
+                LimitEntry *l = &cfg->limits[cfg->limit_count];
                 char apid_str[16] = {0};
-                if (json_get_string(entry, "apid",  apid_str,    sizeof(apid_str)) &&
-                    json_get_string(entry, "param", e->param_name,sizeof(e->param_name)) &&
-                    json_get_string(entry, "units", e->units,    sizeof(e->units)) &&
-                    json_get_float (entry, "red_low",    &e->red_low)    &&
-                    json_get_float (entry, "yellow_low", &e->yellow_low) &&
-                    json_get_float (entry, "yellow_high",&e->yellow_high)&&
-                    json_get_float (entry, "red_high",   &e->red_high)) {
-                    e->apid = parse_hex(apid_str);
+                if (json_get_string(entry, "apid",        apid_str,      sizeof(apid_str)) &&
+                    json_get_string(entry, "param",       l->param_name, sizeof(l->param_name)) &&
+                    json_get_string(entry, "units",       l->units,      sizeof(l->units)) &&
+                    json_get_float (entry, "red_low",    &l->red_low)    &&
+                    json_get_float (entry, "yellow_low", &l->yellow_low) &&
+                    json_get_float (entry, "yellow_high",&l->yellow_high) &&
+                    json_get_float (entry, "red_high",   &l->red_high)) {
+                    l->apid = parse_hex(apid_str);
                     cfg->limit_count++;
                 }
             }
-            p = entry_end + 1;
+            p = e + 1;
         }
     }
 
     free(buf);
-    printf("Loaded %zu APIDs and %zu limits from %s\n",
+    printf("Loaded %zu APIDs and %zu limits from %s\n\n",
            cfg->apid_count, cfg->limit_count, filename);
     return 1;
 }
 
-void demo_json_tables(const char *config_file) {
-    printf("\n=== Demo 2: JSON-Loaded Tables (%s) ===\n\n", config_file);
+// ─────────────────────────────────────────────────────────────────────────────
+// Demo — APID lookup
+// ─────────────────────────────────────────────────────────────────────────────
 
-    MissionConfig cfg;
-    if (!load_mission_config(config_file, &cfg))
-        return;
+void demo_apid_lookup(const MissionConfig *cfg) {
+    printf("--- APID Table Lookup ---\n");
+    uint16_t test_apids[] = { 0x001, 0x020, 0x030, 0x100, 0x7FF, 0x999 };
+    for (size_t i = 0; i < sizeof(test_apids)/sizeof(test_apids[0]); i++) {
+        uint16_t apid = test_apids[i];
+        const ApidEntry *e = apid_lookup(cfg->apids, cfg->apid_count, apid);
+        if (e)
+            printf("  APID 0x%03X → [%-8s] %s\n", apid, e->subsystem, e->description);
+        else
+            printf("  APID 0x%03X → NOT FOUND\n", apid);
+    }
+}
 
-    // Print loaded APID table
-    printf("\n--- Loaded APID Table ---\n");
-    for (size_t i = 0; i < cfg.apid_count; i++) {
-        printf("  APID 0x%03X → [%-8s] %s\n",
-               cfg.apids[i].apid,
-               cfg.apids[i].subsystem,
-               cfg.apids[i].description);
+// ─────────────────────────────────────────────────────────────────────────────
+// Demo — Sequence gap detection
+// ─────────────────────────────────────────────────────────────────────────────
+
+void demo_seq_tracking(void) {
+    printf("\n--- Sequence Gap Detection ---\n");
+    SeqTrackTable seq_tbl;
+    seq_track_init(&seq_tbl);
+
+    uint16_t adcs_stream[] = { 0, 1, 2, 4, 5, 9, 10, 11 };
+    for (size_t i = 0; i < sizeof(adcs_stream)/sizeof(adcs_stream[0]); i++) {
+        uint16_t seq     = adcs_stream[i];
+        uint16_t missing = seq_track_update(&seq_tbl, 0x020, seq);
+        if (missing > 0)
+            printf("  APID 0x020 seq %3u — GAP: %u packet(s) missing\n", seq, missing);
+        else
+            printf("  APID 0x020 seq %3u — OK\n", seq);
     }
 
-    // Print loaded limits table
-    printf("\n--- Loaded Limits Table ---\n");
-    printf("  %-6s  %-22s  %-6s  %8s  %8s  %8s  %8s\n",
-           "APID", "Parameter", "Units",
-           "RedLow", "YlwLow", "YlwHigh", "RedHigh");
-    printf("  %-6s  %-22s  %-6s  %8s  %8s  %8s  %8s\n",
-           "------", "----------------------", "------",
-           "-------", "-------", "-------", "-------");
-    for (size_t i = 0; i < cfg.limit_count; i++) {
-        RuntimeLimitEntry *e = &cfg.limits[i];
-        printf("  0x%03X  %-22s  %-6s  %8.1f  %8.1f  %8.1f  %8.1f\n",
-               e->apid, e->param_name, e->units,
-               e->red_low, e->yellow_low, e->yellow_high, e->red_high);
+    SeqTrackEntry *e = seq_track_get(&seq_tbl, 0x020);
+    if (e) {
+        printf("\n  APID 0x020 Summary:\n");
+        printf("    Total received : %u\n", e->total_received);
+        printf("    Gap events     : %u\n", e->total_gaps);
+        printf("    Total missing  : %u\n", e->total_missing);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Demo — Engineering limits check
+// ─────────────────────────────────────────────────────────────────────────────
+
+void demo_limits(const MissionConfig *cfg) {
+    printf("\n--- Engineering Limits Check ---\n");
+
+    struct { const char *param; float value; } eps_values[] = {
+        { "bus_voltage",   28.3f  },  // Normal
+        { "bus_voltage",   23.5f  },  // Yellow — low
+        { "bus_voltage",   21.0f  },  // Red — critically low
+        { "battery_temp",  25.0f  },  // Normal
+        { "battery_temp",  47.0f  },  // Yellow — high
+        { "solar_current",  0.05f },  // Yellow — low current
+    };
+
+    for (size_t i = 0; i < sizeof(eps_values)/sizeof(eps_values[0]); i++) {
+        const LimitEntry *lim = limit_lookup(cfg->limits, cfg->limit_count,
+                                              0x010, eps_values[i].param);
+        if (lim) {
+            LimitStatus s = limit_check(lim, eps_values[i].value);
+            printf("  EPS %-20s = %7.2f %-6s → %s\n",
+                   eps_values[i].param,
+                   eps_values[i].value,
+                   lim->units,
+                   limit_status_str(s));
+        }
     }
 }
 
@@ -273,7 +232,14 @@ void demo_json_tables(const char *config_file) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 int main(void) {
-    demo_static_tables();
-    demo_json_tables("mission_config.json");
+    MissionConfig cfg;
+
+    if (!load_mission_config("mission_config.json", &cfg))
+        return 1;
+
+    demo_apid_lookup(&cfg);
+    demo_seq_tracking();
+    demo_limits(&cfg);
+
     return 0;
 }
