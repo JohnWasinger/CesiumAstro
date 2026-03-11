@@ -104,7 +104,7 @@ void build_packet(CCSDSPacket *pkt, uint16_t apid, uint16_t seq_count) {
     pkt->primary.packet_data_len = __builtin_bswap16(data_len);
 
     // Secondary header — seconds since Jan 1 1958 epoch
-    pkt->secondary.coarse_time = __builtin_bswap32(2082844800 + 1740000000);
+    pkt->secondary.coarse_time = __builtin_bswap32((uint32_t)2082844800 + 1740000000)
     pkt->secondary.fine_time   = __builtin_bswap16(1234);
 
     // Simulated payload (temperature, voltage, attitude raw counts)
