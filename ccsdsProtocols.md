@@ -15,30 +15,6 @@ payloads for satellite communications.
 | Unified Space Data Link (USLP)  | CCSDS 732.1-B-2| Modern missions            | Flexible framing for all link types   |
 | Delay-Tolerant Network (DTN)    | CCSDS 734.1-B-1| Inter-planetary routing    | Store-and-forward for high latency    |
 
-## Packet and Frame Sizes
-
-### Space Packet (CCSDS 133.0-B-2)
-
-- **Primary header:** exactly 48 bits (6 bytes) — fixed, always present
-- **Secondary header:** mission-defined, typically 48 bits (6 bytes) for a
-  simple coarse/fine timecode
-- **User data:** variable, 1 to 65536 bytes
-- **CRC-16:** 16 bits (2 bytes)
-
-A minimal packet is **8 bytes** (primary header + 1 byte data + CRC). A typical
-telemetry packet like the one in [ccsds_crc.c](ccsds_crc.c) is around
-**30-40 bytes**.
-
-### TM Transfer Frame (CCSDS 132.0-B-2)
-
-- **Primary header:** 48 bits (6 bytes)
-- **Secondary header:** optional, 1-64 bytes
-- **Data field:** fixed per mission, typically **1024 or 8920 bytes** for
-  downlink
-- **Trailer (OCF + FECF):** 4-6 bytes
-
----
-
 ## Space Packet Protocol (SPP) - CCSDS 133.0-B-2
 
 The foundation of CCSDS data encapsulation. Every telemetry or telecommand
@@ -55,28 +31,6 @@ packet follows this structure.
 | Sequence Flags         | 2    | 2 (bits 0-1)   | 00=cont, 01=first, 10=last, 11=alone | `0b11`        |
 | Sequence Count         | 14   | 2-3 (bits 2-15)| Packet counter (0-16383, wraps)      | `100`         |
 | Packet Data Length     | 16   | 4-5            | (Total data field bytes) - 1         | `0x0015` (21) |
-
-**Primary Header Bit Layout:**
-
-```text
- Bit  0                   1                   2                   3
-      0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     |Ver(3)|T|S|          APID (11)          |SF(2)|  Seq Count(14) |
-     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     |              Packet Data Length (16)                          |
-     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
-     Ver = Version (3 bits, always 000)
-     T   = Packet Type (1 bit: 0=TM telemetry, 1=TC telecommand)
-     S   = Secondary Header Flag (1 bit: 1=present)
-     SF  = Sequence Flags (2 bits: 11=standalone, 01=first, 10=last, 00=cont)
-```
-
-Note the APID spans the byte boundary between bytes 0 and 1 — the upper 3 bits
-sit in byte 0 (bits 5-7), the lower 8 bits in byte 1. This is why
-`__builtin_bswap16()` is required before masking with `0x07FF` on little-endian
-systems.
 
 **Example Primary Header (hex):**
 
@@ -103,19 +57,6 @@ Typical fields for telemetry packets:
 | Fine Time           | 16-32 bits | Sub-second resolution (mission-defined)     |
 | Packet Sub-Type     | Variable   | Mission-specific classification             |
 
-**Secondary Header Bit Layout (typical coarse/fine timecode):**
-
-```text
- Bit  0                   1                   2                   3
-      0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     |                    Coarse Time (32 bits)                      |
-     |              Seconds since Jan 1, 1958 TAI epoch              |
-     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     |          Fine Time (16 bits)          | Sub-second resolution |
-     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-```
-
 **CCSDS Time Epoch:** January 1, 1958, 00:00:00 TAI (not Unix epoch!)
 
 Conversion to Unix time:
@@ -138,28 +79,6 @@ uint32_t ccsds_to_unix(uint32_t ccsds_time) {
 
 **Critical Rule:** Always filter APID `0x7FF` before CRC verification to avoid
 false corruption alarms from intentional fill data.
-
-### Full Space Packet Layout
-
-```text
- Byte  0     1     2     3     4     5
-      +-----+-----+-----+-----+-----+-----+
-      |   Packet ID   |  Seq Ctrl   | PDL |   Primary Header (6 bytes, fixed)
-      +-----+-----+-----+-----+-----+-----+
-      |         Coarse Time (4 bytes)      |
-      +-----+-----+-----+-----+-----+-----+   Secondary Header (6 bytes, typical)
-      |   Fine Time   |
-      +-----+-----+--
-      |                                   |
-      |         User Data (variable)      |   1 to 65530 bytes
-      |                                   |
-      +-----+-----+-----+-----+-----+-----+
-      |        CRC-16 (2 bytes)           |   Always last 2 bytes
-      +-----+-----+
-
-      PDL = Packet Data Length = (SecHdr + UserData + CRC bytes) - 1
-      CRC covers everything from byte 0 through end of user data
-```
 
 ### CRC-16/CCITT for Space Packets
 
@@ -240,38 +159,6 @@ Space Packets for transmission over the physical layer.
 | Data Field               | Variable  | Multiplexed Space Packets (typically 1115) |
 | Operational Control Field| Variable  | CLCW (Command Link Control Word)           |
 | Frame Error Control      | 16 bits   | CRC-16/CCITT or none                       |
-
-**TM Transfer Frame Bit Layout:**
-
-```text
- Bit  0                   1                   2                   3
-      0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     |      Sync Marker = 0x1ACFFC1D (32 bits)                      |
-     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     |Ver|      SCID (10)      |  VCID(3) |OCF|MC |  Frame Count(8) |
-     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     |  First Header Pointer (11)  | Sync|  (Frame Header continued) |
-     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     |                                                               |
-     |         Data Field — multiplexed Space Packets                |
-     |         (typically 1115 bytes for standard downlink)          |
-     |                                                               |
-     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     |    OCF (4 bytes, optional)    |    FECF CRC-16 (2 bytes)      |
-     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
-     SCID  = Spacecraft ID
-     VCID  = Virtual Channel ID (demultiplexes data streams)
-     OCF   = Operational Control Field flag
-     MC    = Master Channel frame count flag
-     FECF  = Frame Error Control Field
-     First Header Pointer = byte offset to first Space Packet in data field
-```
-
-The **First Header Pointer** is critical for reassembly — Space Packets can
-span frame boundaries, so the ground system uses this field to find where the
-first complete packet starts in each frame.
 
 **Sync Marker for TM Frames:** `0x1ACFFC1D` (different from Proximity-1)
 
@@ -375,8 +262,8 @@ For hands-on examples of CCSDS Space Packet processing, see:
 
 ## References
 
-- [CCSDS 133.0-B-2: Space Packet Protocol](https://public.ccsds.org/Pubs/133x0b2e1.pdf)
-- [CCSDS 211.0-B-6: Proximity-1 Space Link Protocol](https://public.ccsds.org/Pubs/211x0b6.pdf)
-- [CCSDS 132.0-B-2: TM Space Data Link Protocol](https://public.ccsds.org/Pubs/132x0b2.pdf)
-- [CCSDS 732.1-B-2: Unified Space Data Link Protocol](https://public.ccsds.org/Pubs/732x1b2.pdf)
-- [CCSDS 734.1-B-1: LTP for CCSDS (DTN)](https://public.ccsds.org/Pubs/734x1b1.pdf)
+- [CCSDS 133.0-B-2: Space Packet Protocol](https://ccsds.org/Pubs/133x0b2e2.pdf)
+- [CCSDS 211.0-B-6: Proximity-1 Space Link Protocol](https://ccsds.org/Pubs/211x0b6e1.pdf)
+- [CCSDS 132.0-B-3: TM Space Data Link Protocol](https://ccsds.org/Pubs/132x0b3.pdf)
+- [CCSDS 732.0-B-4: AOS Space Data Link Protocol](https://ccsds.org/Pubs/732x0b4.pdf)
+- [CCSDS 734.1-B-1: LTP for CCSDS](https://ccsds.org/Pubs/734x1b1.pdf)
